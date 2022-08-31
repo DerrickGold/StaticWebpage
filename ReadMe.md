@@ -11,10 +11,10 @@ This package contains scripts generating a static website with photo galleries a
 ## Required Software
 
 Requires the following programs:
-* Scriptable Image Processing System (sips) for thumbnail generation
- * Or ImageMagic with the following wrapper: https://gist.github.com/Aerilius/4557816
-* marked for markdown rendering of github ReadMes: https://github.com/markedjs/marked
-* aws cli tools: https://aws.amazon.com/cli/
+* `sips` (Scriptable Image Processing System) for thumbnail generation
+  * Or `ImageMagic` with the following wrapper: https://gist.github.com/Aerilius/4557816
+* `marked` for markdown rendering of github ReadMes: https://github.com/markedjs/marked
+* `aws` cli tools: https://aws.amazon.com/cli/
 
 
 ## Scripts Overview
@@ -57,12 +57,12 @@ Generates a thumbnail from an input image.
 ## Architecture Setup
 
 * Create an S3 bucket
- * It's safe to enable SSE using a managed KMS key
+  * It's safe to enable SSE using a managed KMS key
 * Enable "Static website hosting" for S3 bucket
 * disable "Block all public access"
 * Create a CloudFront distibution for your S3 bucket 
- * make sure to have a domain name ready or use Route53 to create one
- * If bringing your own domain you may need to generate an SSL cert via ACM and perform a DNS validation
+  * make sure to have a domain name ready or use Route53 to create one
+  * If bringing your own domain you may need to generate an SSL cert via ACM and perform a DNS validation
 * Update `Origin access control settings` and create one for your S3 bucket
 * Add policy (see below) to S3 bucket
 * Optional: tweak your caching strategy on CloudFront
@@ -113,10 +113,11 @@ export DIST_ID="<CLOUDFRONT DISTRIBUTION ID>"
 
 Source Template:
 
-> Template Name: PhotoFolio
-> Template URL: https://bootstrapmade.com/photofolio-bootstrap-photography-website-template/
-> Author: BootstrapMade.com
-> License: https://bootstrapmade.com/license/
-
+```
+Template Name: PhotoFolio
+Template URL: https://bootstrapmade.com/photofolio-bootstrap-photography-website-template/
+Author: BootstrapMade.com
+License: https://bootstrapmade.com/license/
+```
 
 Template contains some modifications.
