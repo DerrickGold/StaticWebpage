@@ -1,0 +1,4 @@
+Add directories containing images to generate a gallery page for. Gallery names are based on the name
+of the folder containing the images.
+
+e.g. src/skeleton/assets/galleries/MyGallery -> MyGallery

@@ -1,0 +1,4 @@
+env.sh
+**.jpg
+out/
+src/templates/generated/*
