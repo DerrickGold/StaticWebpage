@@ -35,7 +35,7 @@ echo '
 ' > $OUTPUT_TEMPLATE_PATH
 
 
-images=$(find "$photosPath" -type f -not -name *.txt | sort)
+images=$(find "$photosPath" -type f -not -name '*.txt' -not -name '*-tb*' | sort)
 
 declare -a inputs 
 while read -r line; do
@@ -67,7 +67,11 @@ echo '
     </section>
 ' >> $OUTPUT_TEMPLATE_PATH
 
+
+
 # generate the gallery page that includes the item template
+echo "Creating gallery page for '$IMG_GALLERY_NAME'"
+
 echo '
 <!DOCTYPE html>
 <html lang="en">
@@ -106,11 +110,13 @@ echo '
 
 
 # Generate a "manifest" file that will be used in the header bar listing
+echo "Adding '$IMG_GALLERY_NAME' to the menu bar"
 manifest_entry="<li><a href="/$OUTPUT_REL_ROOT_PATH">$IMG_GALLERY_NAME</a></li>"
 
 if [ ! -f $MANIFEST_FILE ]; then
     echo  "$manifest_entry" >> $MANIFEST_FILE
-elif [ -z "$(grep $name $MANIFEST_FILE)" ]; then
+elif [ -z "$(grep $IMG_GALLERY_NAME $MANIFEST_FILE)" ]; then
     echo  "$manifest_entry" >> $MANIFEST_FILE
 fi
 
+echo "Galery '$IMG_GALLERY_NAME' done generating"

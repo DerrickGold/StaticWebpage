@@ -55,12 +55,12 @@ done
 
 
 function findUnresolvedTemplates() {
-    find $OUTPATH -iname '*.html' -exec grep -Er "{{.+}}" {} \;
+    # make sure to find templates references that only exist on their own line
+    find $OUTPATH -iname '*.html' -exec grep -Er "^[[:space:]]*{{.+}}[[:space:]]*\$" {} \;
 }
 
 function resolveTemplates() {
     # scan for template usage and replace them
-    #template_usages=$(grep -Er "{{.+}}" $OUTPATH/***.html | sort -u | uniq)
     template_usages=$(findUnresolvedTemplates)
 
     declare -a inputs 
@@ -73,6 +73,10 @@ function resolveTemplates() {
         local template="$(echo $i | cut -d':' -f2 | tr -d ' ' | tr -d '\n\r')"
         local template_file_name="$(echo -n $template | tr -d '{}' | tr -d '\n\r').html"
 
+        if [ -z "$file" ] || [ -z "$template" ]; then
+            continue
+        fi
+
         local template_file="$TEMPLATES_PATH/$template_file_name"
 
         if [ ! -f "$template_file" ]; then
@@ -83,7 +87,9 @@ function resolveTemplates() {
         #contents=$(sed -e "/$template/ {" -e "r $template_file" -e "d" -e "}" "$file")
         local templateContents=$(<$template_file)
         local newFileContents=$(<$file)
-        echo "${newFileContents//$template/$templateContents}" > $file
+        #echo "${newFileContents//$template/$templateContents}" > $file
+        contents=$(cat $file | sed -e "/^[[:space:]]*$template[[:space:]]*\$/ {" -e "r $template_file" -e 'd' -e '}')
+        echo "$contents" > $file
     done
 }
 
@@ -102,6 +108,8 @@ function generateGalleries() {
             ./makeGallery.sh "$OUTPATH/" $outpath "$GENERATED_TEMPLATES_PATH"
         fi
     done
+
+    echo "No more galleries to generate!"
 }
 
 function generateProjects() {
@@ -142,12 +150,13 @@ if [ $BUILD == "true" ]; then
 
     # keep resolving templates until no more are found. This allows for templates
     # to reference other templates as long as they don't reference themselves.
-    oldResolved="notEmpty"
+    echo "Resolving templates..."
+    oldResolved=""
     keepLooping="true"
-    while [ ! -z "${oldResolved}" ] && [ "$keepLooping" == "true" ]; do
+    while [ "$keepLooping" == "true" ]; do
         oldResolved="$(findUnresolvedTemplates | sort -u | uniq)"
         resolveTemplates
-        if [ "${oldResolved}" == "$(findUnresolvedTemplates | sort -u | uniq)" ]; then
+        if [ "${oldResolved}" == "$(findUnresolvedTemplates | sort -u | uniq)" ] || [ -z "${oldResolved}" ]; then
             keepLooping="false"
         fi
     done

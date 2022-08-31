@@ -37,11 +37,17 @@ function generateReadMeSection() {
     local projectName="$2"
     local defaultBranch="$3"
     local templateOutput="$4"
-    local rawReadMe=$(getReadMe "$projectFullName")    
+    local rawReadMe=$(getReadMe "$projectFullName")
+    # Process the readme to fix any flaws that may occur when rendering to HTML
+
+    # Fix any header sections that are missing spaces
+    local sanitizedReadMe=$(echo "$rawReadMe" | sed -E 's/(^#+)/\1 /')
+
+
     # Process the readme for a better web experience
     # First strip the project title and just replace it with "ReadMe" since the
     # project name is already at the top of the page
-    local readMeHtml=$(echo "$rawReadMe" | marked | tail -n+2)
+    local readMeHtml=$(echo "$sanitizedReadMe" | marked | tail -n+2)
     local newTitledReadMe=$(printf "<h1>ReadMe.md</h1>\n%s" "$readMeHtml")
   
     # Next, replace any relative image paths with absolute paths to the blobs

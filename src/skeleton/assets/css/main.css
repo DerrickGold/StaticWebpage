@@ -933,6 +933,11 @@ h6 {
 
 .gallery-single .portfolio-description img {
   max-width: 100%;
+  padding: 8px;
+  margin: 20px;
+  border-color: #ffffff;
+  border-style: solid;
+  border-width: 1px;
 }
 
 .gallery-single .portfolio-description .testimonial-item {
