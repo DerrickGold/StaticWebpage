@@ -452,6 +452,8 @@ h6 {
     background: var(--color-secondary);
     transition: 0.3s;
     border-radius: 4px;
+    overflow-y: auto;
+    max-height: 90vh;
   }
 
   .navbar .dropdown ul li {
@@ -927,6 +929,10 @@ h6 {
 
 .gallery-single .portfolio-description p {
   padding: 0;
+}
+
+.gallery-single .portfolio-description img {
+  max-width: 100%;
 }
 
 .gallery-single .portfolio-description .testimonial-item {

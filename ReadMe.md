@@ -15,6 +15,7 @@ Requires the following programs:
   * Or `ImageMagic` with the following wrapper: https://gist.github.com/Aerilius/4557816
 * `marked` for markdown rendering of github ReadMes: https://github.com/markedjs/marked
 * `aws` cli tools: https://aws.amazon.com/cli/
+* `jq`: https://stedolan.github.io/jq/
 
 
 ## Scripts Overview

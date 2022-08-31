@@ -35,7 +35,7 @@ echo '
 ' > $OUTPUT_TEMPLATE_PATH
 
 
-images=$(find "$photosPath" -type f | sort)
+images=$(find "$photosPath" -type f -not -name *.txt | sort)
 
 declare -a inputs 
 while read -r line; do
@@ -51,9 +51,9 @@ for i in "${inputs[@]}"; do
     echo '
         <div class="col-xl-3 col-lg-4 col-md-6 col-ht-15em">
             <div class="gallery-item h-100">
-                <img src='"$thumbnailRelPath"' class="img-fluid" alt="" loading="lazy">
+                <img src='"/$thumbnailRelPath"' class="img-fluid" alt="" loading="lazy">
                 <div class="gallery-links d-flex align-items-center justify-content-center">
-                    <a href='"$imgRelPath"' title='"$imgName"' class="glightbox preview-link"><i class="bi bi-arrows-angle-expand"></i></a>
+                    <a href='"/$imgRelPath"' title='"$imgName"' class="glightbox preview-link"><i class="bi bi-arrows-angle-expand"></i></a>
                 </div>
             </div>
         </div>' >> $OUTPUT_TEMPLATE_PATH
@@ -106,6 +106,11 @@ echo '
 
 
 # Generate a "manifest" file that will be used in the header bar listing
-echo "<li><a href="$OUTPUT_REL_ROOT_PATH">$IMG_GALLERY_NAME</a></li>" >> $MANIFEST_FILE
+manifest_entry="<li><a href="/$OUTPUT_REL_ROOT_PATH">$IMG_GALLERY_NAME</a></li>"
 
+if [ ! -f $MANIFEST_FILE ]; then
+    echo  "$manifest_entry" >> $MANIFEST_FILE
+elif [ -z "$(grep $name $MANIFEST_FILE)" ]; then
+    echo  "$manifest_entry" >> $MANIFEST_FILE
+fi
 

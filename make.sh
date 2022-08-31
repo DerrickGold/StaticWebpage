@@ -9,9 +9,12 @@ TEMPLATES_PATH="$INPATH/templates"
 WEBSITE_PATH="$INPATH/skeleton/"
 GALLERIES_ROOT="$WEBSITE_PATH/assets/galleries"
 GALLERIES_OUTPUT="$OUTPATH/assets/galleries"
+PROJECTS_OUTPUT="$OUTPATH/projects"
+GENERATED_TEMPLATES_PATH="$TEMPLATES_PATH/generated"
 
 BUILD="false"
 DEPLOY="false"
+KEEP_ASSETS="false"
 
 # Contains the following variables
 #
@@ -25,9 +28,18 @@ fi
 
 while [[ $# -gt 0 ]]; do
   case $1 in
+    "keepAssets")
+        KEEP_ASSETS="true"
+        shift
+    ;;
     "clean")
-        rm -rf $OUTPATH
-        rm -rf "$TEMPLATES_PATH/generated"
+        if [ $KEEP_ASSETS == "true" ]; then
+            rm $OUTPATH/*.html
+            rm -rf $OUTPATH/projects
+        else
+            rm -rf $OUTPATH
+        fi
+        rm -rf "$GENERATED_TEMPLATES_PATH"
         shift
     ;;
     "build")
@@ -57,11 +69,11 @@ function resolveTemplates() {
     done <<< ${template_usages}
 
     for i in "${inputs[@]}"; do
-        file="$(echo $i | cut -d':' -f1)"
-        template="$(echo $i | cut -d':' -f2 | tr -d ' ' | tr -d '\n\r')"
-        template_file_name="$(echo -n $template | tr -d '{}' | tr -d '\n\r').html"
+        local file="$(echo $i | cut -d':' -f1)"
+        local template="$(echo $i | cut -d':' -f2 | tr -d ' ' | tr -d '\n\r')"
+        local template_file_name="$(echo -n $template | tr -d '{}' | tr -d '\n\r').html"
 
-        template_file="$TEMPLATES_PATH/$template_file_name"
+        local template_file="$TEMPLATES_PATH/$template_file_name"
 
         if [ ! -f "$template_file" ]; then
             template_file="$TEMPLATES_PATH/generated/$template_file_name"
@@ -69,14 +81,15 @@ function resolveTemplates() {
 
         echo "Replacing $template in $file with $template_file..."
         #contents=$(sed -e "/$template/ {" -e "r $template_file" -e "d" -e "}" "$file")
-        templateContents=$(<$template_file)
-        newFileContents=$(<$file)
+        local templateContents=$(<$template_file)
+        local newFileContents=$(<$file)
         echo "${newFileContents//$template/$templateContents}" > $file
     done
 }
 
 function generateGalleries() {
-    galleries=$(ls -d $GALLERIES_ROOT/* | sort)
+    #galleries=$(ls -d $GALLERIES_ROOT/* | sort)
+    local galleries=$(find $GALLERIES_ROOT -type d | tail -n+2)
     declare -a gallery_paths 
     while read -r line; do
         gallery_paths+=("$line")
@@ -84,32 +97,65 @@ function generateGalleries() {
 
     for p in "${gallery_paths[@]}"; do
         echo "Generating gallery for $p..."
-        outpath="$GALLERIES_OUTPUT/$(basename $p)"
-        ./makeGallery.sh "$OUTPATH/" $outpath "$TEMPLATES_PATH/generated"
+        local outpath="$GALLERIES_OUTPUT/$(basename $p)"
+        if [ ! -f "$outpath" ]; then
+            ./makeGallery.sh "$OUTPATH/" $outpath "$GENERATED_TEMPLATES_PATH"
+        fi
     done
 }
 
-# clean output dir
-if [ ! -d $OUTPATH ]; then
-    mkdir -p $OUTPATH
-fi
+function generateProjects() {
+    local projects=$(find $PROJECTS_OUTPUT -type d | tail -n+2)
+    declare -a project_paths 
+    while read -r line; do
+        project_paths+=("$line")
+    done <<< ${projects}
+
+    for p in "${project_paths[@]}"; do
+        echo "Generating project for $p..."
+        local outpath="$PROJECTS_OUTPUT/$(basename $p)"
+        ./makeProject.sh "$OUTPATH/" $outpath "$GENERATED_TEMPLATES_PATH"
+    done
+
+}
 
 
 if [ $BUILD == "true" ]; then
+    if [ ! -d $OUTPATH ]; then
+        mkdir -p $OUTPATH
+    fi
+
+    if [ ! -d $PROJECTS_OUTPUT ]; then
+        mkdir -p $PROJECTS_OUTPUT
+    fi
+
+    if [ ! -d $GENERATED_TEMPLATES_PATH ]; then
+        mkdir -p $GENERATED_TEMPLATES_PATH
+    fi
+
     # copy website + assets to out directory for working
     rsync -tur $WEBSITE_PATH $OUTPATH
 
+    #generateProjects
+    ./fetchRepos.sh "$OUTPATH" "$PROJECTS_OUTPUT" "$GENERATED_TEMPLATES_PATH"
     generateGalleries
 
     # keep resolving templates until no more are found. This allows for templates
     # to reference other templates as long as they don't reference themselves.
-    while [ ! -z  "$(findUnresolvedTemplates | sort -u | uniq)" ]; do
+    oldResolved="notEmpty"
+    keepLooping="true"
+    while [ ! -z "${oldResolved}" ] && [ "$keepLooping" == "true" ]; do
+        oldResolved="$(findUnresolvedTemplates | sort -u | uniq)"
         resolveTemplates
+        if [ "${oldResolved}" == "$(findUnresolvedTemplates | sort -u | uniq)" ]; then
+            keepLooping="false"
+        fi
     done
 fi
 
 
 if [ $DEPLOY == "true" ]; then
+    echo "Deploying..."
     # add files
     aws s3 sync "$OUTPATH/." "${BUCKET_PATH}" --delete
     # invalidate the cache
