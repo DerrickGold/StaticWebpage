@@ -44,10 +44,10 @@ e.g.
 
 `out/assets/galleries/MyGallery/image1.jpg`
 
-outputs:
-`gallery-MyGallery.html` containing an:
-    * image tag with the generated thumbnail (<img> -> image1-tb.jpg )
-    * a link to the full image on the thumbnail (<a href> -> image1.jpg)
+outputs `gallery-MyGallery.html` containing an:
+
+* image tag with the generated thumbnail (\<img\> -> image1-tb.jpg )
+* a link to the full image on the thumbnail (\<a href\> -> image1.jpg)
 
 ### mkthumb.sh
 
