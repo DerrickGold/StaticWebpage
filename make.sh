@@ -159,9 +159,17 @@ fi
 
 
 if [ $DEPLOY == "true" ]; then
-    echo "Deploying..."
-    # add files
-    aws s3 sync "$OUTPATH/." "${BUCKET_PATH}" --delete --size-only
+    echo "Deploying website data..."
+    # add website files and assets, exclude galleries since they'll be a good chunk of data
+    aws s3 sync --exclude "assets/galleries/*" "$OUTPATH/." "${BUCKET_PATH}" --delete
+
+    echo "Uploading galleries..."
+    # Use check size-only on galleries so that we don't reupload any regenerated images/thumbnails each time.
+    # Since we're copying data to the output folder, their timestamps might change causing them to get picked up
+    # as a "new" version by S3. We only want to update images that either don't exist, or have been actually modified.
+    aws s3 sync "$OUTPATH/assets/galleries" "${BUCKET_PATH}/assets/galleries" --delete --size-only
+
+    echo "Invalidating caches..."
     # invalidate the cache
     aws cloudfront create-invalidation --distribution-id "${DIST_ID}" \
         --paths /index.html /assets/css/main.css "/albums/*" "/projects/*"
