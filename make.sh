@@ -161,7 +161,7 @@ fi
 if [ $DEPLOY == "true" ]; then
     echo "Deploying..."
     # add files
-    aws s3 sync "$OUTPATH/." "${BUCKET_PATH}" --delete
+    aws s3 sync "$OUTPATH/." "${BUCKET_PATH}" --delete --size-only
     # invalidate the cache
     aws cloudfront create-invalidation --distribution-id "${DIST_ID}" \
         --paths /index.html /assets/css/main.css "/albums/*" "/projects/*"

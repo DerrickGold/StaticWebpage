@@ -56,7 +56,7 @@ Sample gallery here:
 
 #### Parameters
 
-./makeGallery.sh '<root output dir>' '<pictures directory>' '<temlpates output dir>'
+./makeGallery.sh '[root output dir]' '[pictures directory]' '[temlpates output dir]'
 
 sample call: `./makeGallery.sh "./out" "./out/assets/galleries/MyGallery" "./src/templates/generated"`
 
@@ -67,7 +67,7 @@ If your system doesn't support sips (non-MacOS), there exists a sips-like wrappe
 
 #### Parameters
 
-./makeThumbnail.sh '<input image path>' '<target width>' '<target height>' '<output suffix>'
+./makeThumbnail.sh '[input image path]' '[target width]' '[target height]' '[output suffix]'
 
 sample call: `./makeGallery.sh "./test.jpg" "200" "200" "-tb"` -> test-tb.jpg
 
@@ -90,7 +90,7 @@ export GH_USERNAME="<YOUR USERNAME>"
 ```
 
 #### Parameters
-./makeGHProjects.sh '<root output dir>' '<projects outputdir>' '<templates output dir>'
+./makeGHProjects.sh '[root output dir]' '[projects outputdir]' '[templates output dir]'
 
 sample call: `./makeGHProjects.sh "./out" "./out/projects" "./src/templates/generated"`
 

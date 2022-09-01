@@ -157,7 +157,7 @@ function makeProjectPage() {
           <div class="col-lg-6 text-center">
             <h2>'"$name"'</h2>
             <p>'"$description"'</p>
-            <a class="cta-btn" href="'"$ghUrl"'">This page was programmatically generated from GitHub</a>
+            <a class="cta-btn" href="https://github.com/DerrickGold/StaticWebpage">This page was programmatically generated from GitHub</a>
           </div>
         </div>
       </div>
