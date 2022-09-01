@@ -821,7 +821,11 @@ h6 {
 # Gallery Single Section
 --------------------------------------------------------------*/
 .gallery-single .portfolio-details-slider img {
-  width: 100%;
+  min-width: 30%;
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  display: block;
 }
 
 .gallery-single .portfolio-details-slider .swiper-pagination .swiper-pagination-bullet {
@@ -932,12 +936,15 @@ h6 {
 }
 
 .gallery-single .portfolio-description img {
-  max-width: 100%;
-  padding: 8px;
-  margin: 20px;
+  max-width: 90%;
+  /*padding: 8px;
+  margin-left: auto;
+  margin-right: auto;
+  display: block;*/
   border-color: #ffffff;
   border-style: solid;
   border-width: 1px;
+  display: none;
 }
 
 .gallery-single .portfolio-description .testimonial-item {

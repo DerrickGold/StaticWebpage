@@ -6,16 +6,17 @@ The website: https://aws.derrickgold.com
 
 ## About
 
-This package contains scripts generating a static website with photo galleries and project pages based from github URLs. This website can then be hosted via AWS S3 and CloudFront.
+This package contains scripts generating a static website with photo galleries and project pages from GitHub. This website can then be hosted via AWS S3 and CloudFront (or some other means).
 
 ## Required Software
 
 Requires the following programs:
 * `sips` (Scriptable Image Processing System) for thumbnail generation
-  * Or `ImageMagic` with the following wrapper: https://gist.github.com/Aerilius/4557816
+  * (Non MacOS Systems) `ImageMagicK` with the following wrapper for drop-in `sips` replacement: https://gist.github.com/Aerilius/4557816
 * `marked` for markdown rendering of github ReadMes: https://github.com/markedjs/marked
-* `aws` cli tools: https://aws.amazon.com/cli/
-* `jq`: https://stedolan.github.io/jq/
+* `aws` cli tools for deploying files to S3 and invalidating CloudFront cache: https://aws.amazon.com/cli/
+* `curl`: For calling the GitHub API
+* `jq`: for parsing GH api responses: https://stedolan.github.io/jq/
 
 
 ## Scripts Overview
@@ -27,10 +28,11 @@ This is the root script that should be executed to generate everything. Includes
 * `clean` - deletes the `out` folder in which all the generated pages are written into
 * `build` - runs all the generation scripts to produce static HTML files in the `out` folder
 * `deploy` - syncs the `out` folder contents to an S3 bucket and invalidates the CloudFront cache
+* `ghProjects` - runs the generation script to produce project pages based on your public github repositories.
 
 Supports very basic templating to simplify syncing common pieces across multiplate pages. I would recommend using something like Jinja for a more flexible solution. I just wanted a very simple system with minimal dependencies for my own use-cases.
 
-Templates can be inserted in pages using the syntax `{{<template name>}}` where `<template name>` refers to an html file located within the `src/templates` directory.
+Templates can be inserted in pages using the syntax `{{<template name>}}` where `<template name>` refers to an html file located within the `src/templates` directory. These template strings should exist on their own line with only leading and or trailing whitespace characters. This e.g. `<p>{{sometemplate}}</p>` won't work, but `<p>\n{{sometemplate}}\n<\p>` is acceptable. 
 
 e.g. `{{footer}}` -> `src/templates/footer.html`
 
@@ -45,14 +47,52 @@ e.g.
 
 `out/assets/galleries/MyGallery/image1.jpg`
 
-outputs `gallery-MyGallery.html` containing an:
+outputs `out/album/MyGallery.html` containing an:
 
 * image tag with the generated thumbnail (\<img\> -> image1-tb.jpg )
 * a link to the full image on the thumbnail (\<a href\> -> image1.jpg)
 
-### mkthumb.sh
+Sample gallery here: 
 
-Generates a thumbnail from an input image.
+#### Parameters
+
+./makeGallery.sh '<root output dir>' '<pictures directory>' '<temlpates output dir>'
+
+sample call: `./makeGallery.sh "./out" "./out/assets/galleries/MyGallery" "./src/templates/generated"`
+
+### makeThumbnail.sh
+
+Generates a thumbnail from an input image. Uses `sips` to resample and crop images to produce thumbnails of a specific size. 
+If your system doesn't support sips (non-MacOS), there exists a sips-like wrapper for `ImageMagicK` that can be used as a drop-in replacement: https://gist.github.com/Aerilius/4557816
+
+#### Parameters
+
+./makeThumbnail.sh '<input image path>' '<target width>' '<target height>' '<output suffix>'
+
+sample call: `./makeGallery.sh "./test.jpg" "200" "200" "-tb"` -> test-tb.jpg
+
+### makeGHProjects.sh
+
+Calls the Github API to list all your repositories and generates a project page for each public repository. These project pages will include:
+
+* the Repository name and description at the top 
+* a slide show gallery of each image picked up from the ReadMe (relative paths from github hosted images + absolute links)
+* an html generated version of the `README.md` picked from the repository's default branch
+* a link to the GitHub page
+
+These pages will be generated in `out/projects/<REPONAME>.html`.
+
+The following variables must be set prior to executing this script:
+
+```
+export GH_TOKEN="<YOUR TOKEN>"
+export GH_USERNAME="<YOUR USERNAME>"
+```
+
+#### Parameters
+./makeGHProjects.sh '<root output dir>' '<projects outputdir>' '<templates output dir>'
+
+sample call: `./makeGHProjects.sh "./out" "./out/projects" "./src/templates/generated"`
 
 
 ## Architecture Setup
@@ -103,9 +143,13 @@ Generates a thumbnail from an input image.
 ```
 export BUCKET_PATH="s3://<BUCKET NAME>"
 export DIST_ID="<CLOUDFRONT DISTRIBUTION ID>"
+
+# Add these for project page generation based on your public github repositories.
+export GH_TOKEN="<YOUR TOKEN>"
+export GH_USERNAME="<YOUR USERNAME>"
 ```
 
-4. Run `./make.sh clean build` to generate gallery thumbnails, galleries, and project pages
+4. Run `./make.sh clean ghProjects build` to generate gallery thumbnails, galleries, and project pages
 5. Run `./make.sh deploy` to sync files to S3 and invalidate the CloudFront cache
 
 

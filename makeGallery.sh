@@ -8,13 +8,10 @@ projectRoot="$1"
 photosPath="$2"
 templatePath="$3"
 
-
-
-
 IMG_GALLERY_NAME=$(basename $photosPath)
 OUTPUT_TEMPLATE_PATH="$templatePath/$IMG_GALLERY_NAME-gallery.html"
-GENERATED_GALLERY_OUTPATH="$projectRoot"
-OUTPUT_TEMPLATE_ROOT_PATH="$GENERATED_GALLERY_OUTPATH/gallery-$IMG_GALLERY_NAME.html"
+GENERATED_GALLERY_OUTPATH="$projectRoot/album"
+OUTPUT_TEMPLATE_ROOT_PATH="$GENERATED_GALLERY_OUTPATH/$IMG_GALLERY_NAME.html"
 MANIFEST_FILE="$templatePath/gallery-manifest.html"
 OUTPUT_REL_ROOT_PATH="${OUTPUT_TEMPLATE_ROOT_PATH#"$projectRoot/"}"
 
@@ -35,7 +32,7 @@ echo '
 ' > $OUTPUT_TEMPLATE_PATH
 
 
-images=$(find "$photosPath" -type f -not -name '*.txt' -not -name '*-tb*' | sort)
+images=$(find "$photosPath" -type f -not -name '*-tb*'| sort)
 
 declare -a inputs 
 while read -r line; do
@@ -43,9 +40,16 @@ while read -r line; do
 done <<< ${images}
 
 for i in "${inputs[@]}"; do
+    # skip processing file if it's not an image
+    mimeType=$(file -b --mime-type $i)
+    if [ -z "$(echo $mimeType | grep 'image' )" ]; then
+      continue
+    fi
+
+
     imgRelPath="${i#"$projectRoot"}"
     imgName=$(basename "$i")
-    thumbnail=$(./mkthumb.sh "$i" )
+    thumbnail=$(./makeThumbnail.sh "$i" )
     thumbnailRelPath="${thumbnail#"$projectRoot"}"
 
     echo '

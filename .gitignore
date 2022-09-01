@@ -2,3 +2,4 @@ env.sh
 **.jpg
 out/
 src/templates/generated/*
+.DS_Store
