@@ -36,31 +36,27 @@ fi
 #if (( $(echo "scale=2; $imgRatio > 1.6" | bc) )); then
 function getWidth() {
     file="$1"
-    sips -1 -g pixelWidth $file | cut -d'|' -f2 | grep -Eo '[0-9]+'
+    #sips -1 -g pixelWidth $file | cut -d'|' -f2 | grep -Eo '[0-9]+'
+    identify -quiet -auto-orient -format %w "$file" | grep -Eo '[0-9]+'
 }
 
 function getHeight() {
     file="$1"
-    sips -1 -g pixelHeight $file | cut -d'|' -f2 | grep -Eo '[0-9]+'
+    #sips -1 -g pixelHeight $file | cut -d'|' -f2 | grep -Eo '[0-9]+'
+    identify -quiet -auto-orient -format %h "$file" | grep -Eo '[0-9]+'
 }
 
 # get image dimensions to figure out the best way of generating the thumbnail
 imgWidth="$(getWidth $curFile)"
 imgHeight="$(getHeight $curFile)"
 imgRatio=$(echo "scale=2; $imgWidth/$imgHeight" | bc)
-
 function scaleVerticalImage() {
     inFile="$1"
     outFile="$2"
     tH="$3"
     tW="$4"
-
-    #offsetX="0"
-    #offsetY=$(echo "($imgHeight-$newHeight)/2" | bc)
-
-    sips --resampleWidth "$tW" $inFile --out "$outFile.tmp" &> /dev/null
-    sips --cropToHeightWidth "$tH" "$tW" "$outFile.tmp" --out "$outFile" &> /dev/null
-    #rm "$outFile.tmp"
+    convert -quiet -auto-orient "$inFile" -resize "${tW}x"  "$outFile.tmp"
+    convert -quiet -auto-orient -gravity center "$outFile.tmp" -crop "${tW}x${tH}+0+0"  "$outFile"
     echo "$outFile.tmp"
 }
 
@@ -69,9 +65,8 @@ function scaleHoritzontalImage() {
     outFile="$2"
     tH="$3"
     tW="$4"
-
-    sips --resampleHeight "$tH" $inFile --out "$outFile.tmp" &> /dev/null
-    sips --cropToHeightWidth "$tH" "$tW" "$outFile.tmp" --out "$outFile" &> /dev/null
+    convert -quiet -auto-orient "$inFile" -resize "x${tW}"  "$outFile.tmp"
+    convert -quiet -auto-orient -gravity center "$outFile.tmp" -crop "${tW}x${tH}+0+0"  "$outFile"
     echo "$outFile.tmp"
 }
 
@@ -86,7 +81,7 @@ if (( $(echo "scale=2; $imgRatio > 1.4" | bc) )); then
     fi
 
     rm "$tmp"
-else 
+elif (( $(echo "scale=2; $imgRatio > 0.9" | bc) )); then
     # portrait mode. Resample based on width and crop the vertical middle
     tmp=$(scaleVerticalImage $curFile $outfile $newHeight $newWidth)
 
@@ -97,7 +92,10 @@ else
     fi
 
     rm "$tmp"
+else
+    # portrait mode. Resample based on width and crop the vertical middle
+    tmp=$(scaleVerticalImage $curFile $outfile $newHeight $newWidth)
+    rm "$tmp"
 fi
-
 
 echo $outfile
