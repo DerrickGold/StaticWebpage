@@ -83,7 +83,10 @@ function generateReadMeSection() {
   for url in "${pathsArray[@]}"; do
     if [ -z "$(echo $url | grep -E '^https.+')" ]; then
       # no absolute path was found, insert it
-      local newUrl="https://raw.githubusercontent.com/${projectFullName}/${defaultBranch}${url}"
+
+      # replace any './' references to just '/'
+      sanitizedPath=$(echo "${url}" | sed -e 's,./,/,')
+      local newUrl="https://raw.githubusercontent.com/${projectFullName}/${defaultBranch}${sanitizedPath}"
 
       echo '<div class="swiper-slide">
                     <img src='"$newUrl"' alt="">
