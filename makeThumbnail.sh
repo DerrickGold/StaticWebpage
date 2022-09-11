@@ -37,6 +37,7 @@ if [ ! -z "$(echo $mimeType | grep 'video')" ]; then
 
     yes | ffmpeg -i "$curFile" -ss 00:00:1.000 -frames:v 1 "$imgFile"
     extension="jpg"
+    touch -r "$curFile" "$imgFile"
     curFile="$imgFile"
     deleteInput="true"
 fi
@@ -113,6 +114,8 @@ else
     tmp=$(scaleVerticalImage $curFile $outfile $newHeight $newWidth)
     rm "$tmp"
 fi
+
+touch -r "$curFile" "$outfile"
 
 if [ "$deleteInput" == "true" ]; then
     rm "$curFile"

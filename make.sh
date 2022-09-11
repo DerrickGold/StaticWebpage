@@ -11,11 +11,13 @@ GALLERIES_ROOT="$WEBSITE_PATH/assets/galleries"
 GALLERIES_OUTPUT="$OUTPATH/assets/galleries"
 PROJECTS_OUTPUT="$OUTPATH/projects"
 GENERATED_TEMPLATES_PATH="$TEMPLATES_PATH/generated"
+NEW_PHOTOS_COUNT="12"
 
 BUILD="false"
 DEPLOY="false"
 KEEP_ASSETS="false"
 MAKE_GH_PROJECTS="false"
+MAKE_ALBUMS="false"
 
 # Contains the following variables
 #
@@ -26,38 +28,47 @@ if [ -f "./env.sh" ]; then
     source "./env.sh"
 fi
 
-
 while [[ $# -gt 0 ]]; do
-  case $1 in
+    case $1 in
     "keepAssets")
         KEEP_ASSETS="true"
         shift
-    ;;
+        ;;
     "clean")
         if [ $KEEP_ASSETS == "true" ]; then
             rm $OUTPATH/*.html
             rm -rf $OUTPATH/projects
+            # if [ "$MAKE_GH_PRJECTS" == "true" ]; then
+            # rm -rf "$GENERATED_TEMPLATES_PATH/"project-*.html
+            #fi
+            # if [ "$MAKE_ALBUMS" == "true" ]; then
+            # rm -rf "$GENERATED_TEMPLATES/"*-gallery.html
+            #fi
         else
             rm -rf $OUTPATH
+            # rm -rf "$GENERATED_TEMPLATES_PATH"
         fi
         rm -rf "$GENERATED_TEMPLATES_PATH"
         shift
-    ;;
+        ;;
     "ghProjects")
         MAKE_GH_PROJECTS="true"
         shift
-    ;;
+        ;;
+    "albums")
+        MAKE_ALBUMS="true"
+        shift
+        ;;
     "build")
         BUILD="true"
         shift
-    ;;
+        ;;
     "deploy")
         DEPLOY="true"
         shift
-    ;;
-  esac
-done  
-
+        ;;
+    esac
+done
 
 function findUnresolvedTemplates() {
     # make sure to find templates references that only exist on their own line
@@ -68,10 +79,10 @@ function resolveTemplates() {
     # scan for template usage and replace them
     template_usages=$(findUnresolvedTemplates)
 
-    declare -a inputs 
+    declare -a inputs
     while read -r line; do
         inputs+=("$line")
-    done <<< ${template_usages}
+    done <<<${template_usages}
 
     for i in "${inputs[@]}"; do
         local file="$(echo $i | cut -d':' -f1)"
@@ -94,22 +105,27 @@ function resolveTemplates() {
         local newFileContents=$(<$file)
         #echo "${newFileContents//$template/$templateContents}" > $file
         contents=$(cat $file | sed -e "/^[[:space:]]*$template[[:space:]]*\$/ {" -e "r $template_file" -e 'd' -e '}')
-        echo "$contents" > $file
+        echo "$contents" >$file
     done
 }
 
 function generateGalleries() {
     local galleries=$(find $GALLERIES_ROOT -type d | tail -n+2 | sort)
-    declare -a gallery_paths 
+    declare -a gallery_paths
     while read -r line; do
         gallery_paths+=("$line")
-    done <<< ${galleries}
+    done <<<${galleries}
 
     for p in "${gallery_paths[@]}"; do
         echo "Generating gallery for $p..."
         local outpath="$GALLERIES_OUTPUT/$(basename $p)"
         ./makeGallery.sh "$OUTPATH/" $outpath "$GENERATED_TEMPLATES_PATH"
     done
+
+    # Generate the gallery of newest photos for the home page
+    # This will generate a template "NewPics-gallery.html" that can be included
+    ./scanForNewestPhotos.py ./out/assets/galleries/ '.*-tb.+,\.DS_Store,.+\.json,.+\.txt' | head -n $NEW_PHOTOS_COUNT |
+        xargs ./makeGallery.sh "$OUTPATH/" "$GALLERIES_OUTPUT/NewPics" "$GENERATED_TEMPLATES_PATH" "true"
 
     echo "No more galleries to generate!"
 }
@@ -131,14 +147,16 @@ if [ $BUILD == "true" ]; then
     # Template references are lost in the output files after they have been
     # replaced. So we need to copy our originals each time to ensure new template
     # changes will be embedded.
-    cp -r $WEBSITE_PATH $OUTPATH
+    cp -pr $WEBSITE_PATH $OUTPATH
 
     #generateProjects
     if [ "$MAKE_GH_PROJECTS" == "true" ]; then
         ./makeGHProjects.sh "$OUTPATH" "$PROJECTS_OUTPUT" "$GENERATED_TEMPLATES_PATH"
     fi
 
-    generateGalleries
+    if [ "$MAKE_ALBUMS" == "true" ]; then
+        generateGalleries
+    fi
 
     # keep resolving templates until no more are found. This allows for templates
     # to reference other templates as long as they don't reference themselves.
@@ -157,7 +175,6 @@ if [ $BUILD == "true" ]; then
     done
 fi
 
-
 if [ $DEPLOY == "true" ]; then
     echo "Deploying website data..."
     # add website files and assets, exclude galleries since they'll be a good chunk of data
@@ -174,5 +191,3 @@ if [ $DEPLOY == "true" ]; then
     aws cloudfront create-invalidation --distribution-id "${DIST_ID}" \
         --paths /index.html /assets/css/main.css "/album/*" "/projects/*"
 fi
-
-

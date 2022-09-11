@@ -8,6 +8,15 @@ projectRoot="$1"
 photosPath="$2"
 templatePath="$3"
 
+# if set to true, gallery image templates will be generated but
+# a gallery specific page will not be generated or linked in the nav bar.
+# Also will not scan a given path for images, all images must be provided as additional
+# parameters
+embeddedGallery="$4"
+if [ ! -z "$embeddedGallery" ]; then
+  shift 4
+fi
+
 IMG_GALLERY_NAME=$(basename $photosPath)
 OUTPUT_TEMPLATE_PATH="$templatePath/$IMG_GALLERY_NAME-gallery.html"
 GENERATED_GALLERY_OUTPATH="$projectRoot/album"
@@ -32,12 +41,19 @@ echo '
         <div class="row gy-4 justify-content-center">
 ' >$OUTPUT_TEMPLATE_PATH
 
-images=$(find "$photosPath" -type f -not -name '*-tb*' | sort)
-
 declare -a inputs
-while read -r line; do
-  inputs+=("$line")
-done <<<${images}
+
+if [ -z "$embeddedGallery" ]; then
+  images=$(find "$photosPath" -type f -not -name '*-tb*' | sort)
+  while read -r line; do
+    inputs+=("$line")
+  done <<<${images}
+else
+  while [[ $# -gt 0 ]]; do
+    inputs+=("$1")
+    shift
+  done
+fi
 
 for i in "${inputs[@]}"; do
   imgFile="$i"
@@ -53,6 +69,8 @@ for i in "${inputs[@]}"; do
       mp4Out=${i/.$extension/"-web.mp4"}
       if [ ! -f "$mp4Out" ]; then
         ffmpeg -i "$i" -c:v copy -c:a copy "$mp4Out"
+        # make sure we preserve the creation dates
+        touch -r "$i" "$mp4Out"
         rm "$i"
       fi
       imgFile="$mp4Out"
@@ -63,6 +81,7 @@ for i in "${inputs[@]}"; do
     if [[ $imgFile == *.heic ]]; then
       imgFile="${i%.heic}.jpg"
       convert "$i" "$imgFile"
+      touch -r "$i" "$imgFile"
       # remove the heic file so it doesn't get included in the gallery
       rm "$i"
     fi
@@ -86,8 +105,9 @@ for i in "${inputs[@]}"; do
   # if a details.json file exists (<filename>:<text>), add the corresponding description
   # of the file to the big image viewer.
   details="$imgName"
-  if [ -f "$DETAILS_JSON" ]; then
-    details=$(cat "$DETAILS_JSON" | jq '.["'"$imgName"'"]')
+  detailsPath="$(dirname $imgFile)/details.json"
+  if [ -f "$detailsPath" ]; then
+    details=$(cat "$detailsPath" | jq '.["'"$imgName"'"]')
     if [ "$details" == "null" ]; then
       details="$imgName"
     fi
@@ -102,7 +122,6 @@ for i in "${inputs[@]}"; do
               </div>
           </div>
       </div>' >>$OUTPUT_TEMPLATE_PATH
-
 done
 
 echo '
@@ -110,6 +129,11 @@ echo '
         </div>
     </section>
 ' >>$OUTPUT_TEMPLATE_PATH
+
+if [ "$embeddedGallery" == "true" ]; then
+  echo "Embedded gallery templates generated"
+  exit 0
+fi
 
 # generate the gallery page that includes the item template
 echo "Creating gallery page for '$IMG_GALLERY_NAME'"
