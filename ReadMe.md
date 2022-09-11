@@ -11,9 +11,8 @@ This package contains scripts generating a static website with photo galleries a
 ## Required Software
 
 Requires the following programs:
-* `sips` (Scriptable Image Processing System) for thumbnail generation
-  * (Non MacOS Systems) `ImageMagicK` with the following wrapper for drop-in `sips` replacement: https://gist.github.com/Aerilius/4557816
-* `marked` for markdown rendering of github ReadMes: https://github.com/markedjs/marked
+* `ImageMagic` for thumbnail generation (`convert`, `identify`)
+* `marked` for markdown rendering of github ReadMe: https://github.com/markedjs/marked
 * `aws` cli tools for deploying files to S3 and invalidating CloudFront cache: https://aws.amazon.com/cli/
 * `curl`: For calling the GitHub API
 * `jq`: for parsing GH api responses: https://stedolan.github.io/jq/
@@ -62,8 +61,7 @@ sample call: `./makeGallery.sh "./out" "./out/assets/galleries/MyGallery" "./src
 
 ### makeThumbnail.sh
 
-Generates a thumbnail from an input image. Uses `sips` to resample and crop images to produce thumbnails of a specific size. 
-If your system doesn't support sips (non-MacOS), there exists a sips-like wrapper for `ImageMagicK` that can be used as a drop-in replacement: https://gist.github.com/Aerilius/4557816
+Generates a thumbnail from an input image or video. Uses `ImageMagick` to resample and crop images to produce thumbnails of a specific size. 
 
 #### Parameters
 

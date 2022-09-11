@@ -16,9 +16,6 @@ MANIFEST_FILE="$templatePath/gallery-manifest.html"
 OUTPUT_REL_ROOT_PATH="${OUTPUT_TEMPLATE_ROOT_PATH#"$projectRoot/"}"
 DETAILS_JSON="$photosPath/details.json"
 
-# values go from 0 (best) to 63 (worst)
-WEBM_QUALITY="30"
-
 if [ ! -d "$templatePath" ]; then
   mkdir -p "$templatePath"
 fi
@@ -37,80 +34,47 @@ echo '
 
 images=$(find "$photosPath" -type f -not -name '*-tb*' | sort)
 
-
 declare -a inputs
 while read -r line; do
   inputs+=("$line")
 done <<<${images}
 
 for i in "${inputs[@]}"; do
-  # skip processing file if it's not an image
   imgFile="$i"
   mimeType=$(file -b --mime-type "$imgFile")
   icon="bi-arrows-angle-expand"
-  cleanUpSrc="false"
 
   if [ ! -z "$(echo $mimeType | grep 'video')" ]; then
-    # if it's a video, create a thumbnail from the first frame
-    echo "Video found, generating thumbnail"
-    imgFile="${i}.jpg"
-    yes | ffmpeg -i "$i" -ss 00:00:1.000 -vframes 1 "$imgFile"
     icon="bi-play-btn-fill"
-    # don't let the img extracted from video files be included in the album
-    # as it's own entry.
-    cleanUpSrc="true"
 
-    # make sure video is streamable
     if [ -z "$(echo $mimeType | grep 'mp4')" ]; then
-      mp4Out="${i}.mp4"
+      # make sure video is streamable
+      extension="${i##*.}"
+      mp4Out=${i/.$extension/"-web.mp4"}
       if [ ! -f "$mp4Out" ]; then
         ffmpeg -i "$i" -c:v copy -c:a copy "$mp4Out"
         rm "$i"
       fi
-      i="$mp4Out"
+      imgFile="$mp4Out"
     fi
-
-    # Then convert the video to webm for best web performance if it isn't already
-    # Make sure we don't reconvert videos that have already been converted.
-    # You will need to delete old videos if the quality parameters are changed to regenerate
-    # them.
-
-    #if [ ! "$i" == "*.webm" ]; then
-    #  webmOut="${i}.webm"
-    #  if [ ! -f "$webmOut" ]; then
-        # constant quality (single pass mode)
-    #    ffmpeg -i "$i" -c:v libvpx-vp9 -crf "${WEBM_QUALITY}" -b:v 0 -c:a libvorbis "$webmOut"
-        # two pass mode
-        #ffmpeg -i "$i" -c:v libvpx-vp9 -b:v 0 -crf "${WEBM_QUALITY}"  -pass 1 -an -f null /dev/null && \
-        #ffmpeg -i "$i" -c:v libvpx-vp9 -b:v 0 -crf "${WEBM_QUALITY}"  -pass 2 -c:a libopus "$webmOut"
-
-     #   rm "$i"
-     # fi
-     # i="$webmOut"
-    # fi
-  fi
-
-  # convert any heic files to jpg if found. Heic is a patented image format that browsers may
-  # not support natively
-  if [[ $imgFile == *.heic ]]; then
-    imgFile="${i%.heic}.jpg"
-    convert "$i" "$imgFile"
-    # remove the heic file so it doesn't get included in the gallery
-    rm "$i"
-    # update our file path pointer to our new jpg file
-    i="$imgFile"
-  fi
-
-  mimeType=$(file -b --mime-type "$imgFile")
-  if [ -z "$(echo $mimeType | grep 'image')" ]; then
+  elif [ ! -z "$(echo $mimeType | grep 'image')" ]; then
+    # convert any heic files to jpg if found. Heic is a patented image format that browsers may
+    # not support natively
+    if [[ $imgFile == *.heic ]]; then
+      imgFile="${i%.heic}.jpg"
+      convert "$i" "$imgFile"
+      # remove the heic file so it doesn't get included in the gallery
+      rm "$i"
+    fi
+  else
+    # skip processing file if it's not an image or video
     continue
   fi
 
-  # always point to the source object if it's a video or image
-  imgRelPath="${i#"$projectRoot"}"
-  imgName=$(basename "$i")
+  imgRelPath="${imgFile#"$projectRoot"}"
+  imgName=$(basename "$imgFile")
 
-  # skip already added images
+  # skip already added file
   if [ ! -z "$(grep $imgRelPath $OUTPUT_TEMPLATE_PATH)" ]; then
     continue
   fi
@@ -119,16 +83,11 @@ for i in "${inputs[@]}"; do
   thumbnail=$(./makeThumbnail.sh "$imgFile")
   thumbnailRelPath="${thumbnail#"$projectRoot"}"
 
-  
-  if [ "$cleanUpSrc" == "true" ]; then
-    rm "$imgFile"
-  fi
-
   # if a details.json file exists (<filename>:<text>), add the corresponding description
   # of the file to the big image viewer.
   details="$imgName"
   if [ -f "$DETAILS_JSON" ]; then
-    details=$(cat "$DETAILS_JSON" | jq '.["'"$imgName"'"]' )
+    details=$(cat "$DETAILS_JSON" | jq '.["'"$imgName"'"]')
     if [ "$details" == "null" ]; then
       details="$imgName"
     fi
@@ -155,10 +114,9 @@ echo '
 # generate the gallery page that includes the item template
 echo "Creating gallery page for '$IMG_GALLERY_NAME'"
 
-
 albumDescription=""
 if [ -f "$DETAILS_JSON" ]; then
-  albumDescription=$(cat "$DETAILS_JSON" | jq -r '.description' )
+  albumDescription=$(cat "$DETAILS_JSON" | jq -r '.description')
   if [ "$albumDescription" == "null" ]; then
     albumDescription=""
   fi
