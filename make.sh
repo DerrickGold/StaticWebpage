@@ -15,6 +15,7 @@ NEW_PHOTOS_COUNT="12"
 
 BUILD="false"
 DEPLOY="false"
+CLEAN="false"
 KEEP_ASSETS="false"
 MAKE_GH_PROJECTS="false"
 MAKE_ALBUMS="false"
@@ -35,20 +36,7 @@ while [[ $# -gt 0 ]]; do
         shift
         ;;
     "clean")
-        if [ $KEEP_ASSETS == "true" ]; then
-            rm $OUTPATH/*.html
-            rm -rf $OUTPATH/projects
-            # if [ "$MAKE_GH_PRJECTS" == "true" ]; then
-            # rm -rf "$GENERATED_TEMPLATES_PATH/"project-*.html
-            #fi
-            # if [ "$MAKE_ALBUMS" == "true" ]; then
-            # rm -rf "$GENERATED_TEMPLATES/"*-gallery.html
-            #fi
-        else
-            rm -rf $OUTPATH
-            # rm -rf "$GENERATED_TEMPLATES_PATH"
-        fi
-        rm -rf "$GENERATED_TEMPLATES_PATH"
+        CLEAN="true"
         shift
         ;;
     "ghProjects")
@@ -129,6 +117,28 @@ function generateGalleries() {
 
     echo "No more galleries to generate!"
 }
+
+function clean() {
+    if [ "$KEEP_ASSETS" == "true" ]; then
+        rm $OUTPATH/*.html
+        rm -rf $OUTPATH/projects
+        if [ "$MAKE_GH_PROJECTS" == "true" ]; then
+            echo "Cleaning GH Project templates..."
+            rm -rf $GENERATED_TEMPLATES_PATH/project-*.html
+        fi
+        if [ "$MAKE_ALBUMS" == "true" ]; then
+            echo "Cleaning album templtes..."
+            rm -rf $GENERATED_TEMPLATES/*-gallery.html
+        fi
+    else
+        rm -rf $OUTPATH
+        rm -rf "$GENERATED_TEMPLATES_PATH"
+    fi
+}
+
+if [ "$CLEAN" == "true" ]; then
+    clean
+fi
 
 if [ $BUILD == "true" ]; then
     if [ ! -d $OUTPATH ]; then

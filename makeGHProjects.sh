@@ -85,11 +85,11 @@ function generateReadMeSection() {
       # no absolute path was found, insert it
 
       # replace any './' references to just '/'
-      sanitizedPath=$(echo "${url}" | sed -e 's,./,/,')
+      sanitizedPath=$(echo "${url}" | sed -e 's,^\./,/,')
       local newUrl="https://raw.githubusercontent.com/${projectFullName}/${defaultBranch}${sanitizedPath}"
 
       echo '<div class="swiper-slide">
-                    <img src='"$newUrl"' alt="">
+                    <img src="'$newUrl'" alt="">
                 </div>' >>$slidesTemplateOutput
 
       echo "Replacing relative url: $url with $newUrl"
@@ -97,7 +97,7 @@ function generateReadMeSection() {
       newTitledReadMe="$temp"
     else
       echo '<div class="swiper-slide">
-                    <img src='"$url"' alt="">
+                    <img src="'$url'" alt="">
                 </div>' >>$slidesTemplateOutput
     fi
   done
