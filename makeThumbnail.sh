@@ -28,7 +28,7 @@ if [ ! -z "$(echo $mimeType | grep 'video')" ]; then
     imgFile="${curFile/.$extension/.jpg}"
 
     # Check if the thumbnail already exists before extracting
-    outfile="${curFile/.$extension/$outTag.$extension}"
+    outfile="${curFile/.$extension/$outTag.jpg}"
     # if the thumbnail exists already, skip processing it
     if [ -f "$outfile" ]; then
         echo "$outfile"
