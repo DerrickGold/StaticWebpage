@@ -113,12 +113,22 @@ for i in "${inputs[@]}"; do
     fi
   fi
 
+  galleryLink=""
+  if [ ! -z "$embeddedGallery" ]; then
+    galleryName="$(basename $(dirname $imgFile))"
+    sourceAlbum="$GENERATED_GALLERY_OUTPATH/$galleryName.html"
+    albumRelPath="${sourceAlbum#"$projectRoot"}"
+
+    galleryLink='<a href="'"$albumRelPath"'" class="details-link"><i class="bi bi-link-45deg"></i></a>'
+  fi
+
   echo '
       <div class="col-xl-3 col-lg-4 col-md-6 col-ht-15em">
           <div class="gallery-item h-100">
               <img src='"/$thumbnailRelPath"' class="img-fluid" alt="" loading="lazy">
               <div class="gallery-links d-flex align-items-center justify-content-center">
                   <a href='"/$imgRelPath"' title='"$details"' class="glightbox preview-link"><i class="bi '"$icon"'"></i></a>
+                  '"$galleryLink"'
               </div>
           </div>
       </div>' >>$OUTPUT_TEMPLATE_PATH
