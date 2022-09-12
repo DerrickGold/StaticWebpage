@@ -13,9 +13,9 @@ templatePath="$3"
 # Also will not scan a given path for images, all images must be provided as additional
 # parameters
 embeddedGallery="$4"
-if [ ! -z "$embeddedGallery" ]; then
-  shift 4
-fi
+#if [ ! -z "$embeddedGallery" ]; then
+shift 4
+#fi
 
 IMG_GALLERY_NAME=$(basename $photosPath)
 OUTPUT_TEMPLATE_PATH="$templatePath/$IMG_GALLERY_NAME-gallery.html"
@@ -43,17 +43,19 @@ echo '
 
 declare -a inputs
 
-if [ -z "$embeddedGallery" ]; then
-  images=$(find "$photosPath" -type f -not -name '*-tb*' | sort)
-  while read -r line; do
-    inputs+=("$line")
-  done <<<${images}
-else
-  while [[ $# -gt 0 ]]; do
-    inputs+=("$1")
-    shift
-  done
-fi
+#if [ -z "$embeddedGallery" ]; then
+#  images=$(find "$photosPath" -type f -not -name '*-tb*' | sort)
+#  while read -r line; do
+#    inputs+=("$line")
+#  done <<<${images}
+#else
+
+#fi
+
+while [[ $# -gt 0 ]]; do
+  inputs+=("$1")
+  shift
+done
 
 for i in "${inputs[@]}"; do
   imgFile="$i"
@@ -114,7 +116,7 @@ for i in "${inputs[@]}"; do
   fi
 
   galleryLink=""
-  if [ ! -z "$embeddedGallery" ]; then
+  if [ ! -z "$embeddedGallery" ] || [ "$embeddedGallery" == "true" ]; then
     galleryName="$(basename $(dirname $imgFile))"
     sourceAlbum="$GENERATED_GALLERY_OUTPATH/$galleryName.html"
     albumRelPath="${sourceAlbum#"$projectRoot"}"
@@ -125,9 +127,9 @@ for i in "${inputs[@]}"; do
   echo '
       <div class="col-xl-3 col-lg-4 col-md-6 col-ht-15em">
           <div class="gallery-item h-100">
-              <img src='"/$thumbnailRelPath"' class="img-fluid" alt="" loading="lazy">
+              <img src='"$thumbnailRelPath"' class="img-fluid" alt="" loading="lazy">
               <div class="gallery-links d-flex align-items-center justify-content-center">
-                  <a href='"/$imgRelPath"' title='"$details"' class="glightbox preview-link"><i class="bi '"$icon"'"></i></a>
+                  <a href='"$imgRelPath"' title='"$details"' class="glightbox preview-link"><i class="bi '"$icon"'"></i></a>
                   '"$galleryLink"'
               </div>
           </div>
