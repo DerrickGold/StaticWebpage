@@ -107,19 +107,28 @@ function generateGalleries() {
     for p in "${gallery_paths[@]}"; do
         echo "Generating gallery for $p..."
         local outpath="$GALLERIES_OUTPUT/$(basename $p)"
-        #./makeGallery.sh "$OUTPATH/" $outpath "$GENERATED_TEMPLATES_PATH"
-        #./scanForNewestPhotos.py "$outpath" '.*-tb.+,\.DS_Store,.+\.json,.+\.txt' 'False' | \
-        #    xargs ./makeGallery.sh "$OUTPATH/" "$outpath" "$GENERATED_TEMPLATES_PATH" "false"
-        ./scanForNewestPhotos.py "$outpath" '.*-tb.*,\.DS_Store,.+\.json,.+\.txt,.*-web\..*' 'False' "0" "$OUTPATH" \
-            "$GENERATED_TEMPLATES_PATH/gallery-$(basename $p).html" "$OUTPATH/album" "$GENERATED_TEMPLATES_PATH/gallery-manifest.html"
+
+        ./scanForNewestPhotos.py --scanDir "$outpath" \
+            --excludes '.*-tb.*,\.DS_Store,.+\.json,.+\.txt,.*-web\..*' \
+            --maxImages "0" \
+            --outputRoot "$OUTPATH" \
+            --galleryTemplatePath "$GENERATED_TEMPLATES_PATH/gallery-$(basename $p).html" \
+            --albumOutputRoot "$OUTPATH/album" \
+            --manifestPath "$GENERATED_TEMPLATES_PATH/gallery-manifest.html"
     done
 
     # Generate the gallery of newest photos for the home page
     # This will generate a template "NewPics-gallery.html" that can be included
     #./scanForNewestPhotos.py ./out/assets/galleries/ '.*-tb.+,\.DS_Store,.+\.json,.+\.txt' 'True' | head -n $NEW_PHOTOS_COUNT | \
     #    xargs ./makeGallery.sh "$OUTPATH/" "$GALLERIES_OUTPUT/NewPics" "$GENERATED_TEMPLATES_PATH" "true"
-    ./scanForNewestPhotos.py "$GALLERIES_OUTPUT" '.*-tb.*,\.DS_Store,.+\.json,.+\.txt,.*-web\..*' 'True' "$NEW_PHOTOS_COUNT" "$OUTPATH" \
-            "$GENERATED_TEMPLATES_PATH/gallery-NewPics.html" "$OUTPATH/album" "$GENERATED_TEMPLATES_PATH/gallery-manifest.html"
+    ./scanForNewestPhotos.py --scanDir "$GALLERIES_OUTPUT" \
+        --excludes '.*-tb.*,\.DS_Store,.+\.json,.+\.txt,.*-web\..*' \
+        --embedded \
+        --maxImages "$NEW_PHOTOS_COUNT" \
+        --outputRoot "$OUTPATH" \
+        --galleryTemplatePath "$GENERATED_TEMPLATES_PATH/gallery-NewPics.html" \
+        --albumOutputRoot "$OUTPATH/album" \
+        --manifestPath "$GENERATED_TEMPLATES_PATH/gallery-manifest.html"
 
     echo "No more galleries to generate!"
 }

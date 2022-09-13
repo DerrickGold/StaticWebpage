@@ -1,24 +1,17 @@
 #!/usr/bin/env python3
 
-# Returns a list of all photos/videos in order of newest to oldest.
+# Generates a gallery from an input folder.
+# Image descriptions can be defined in a `details.json` file in the same directory as the image
+# that maps `[filename]:<description>`, where filename is the name of the file excluding it's extension.
 
 import os
-import sys
 import platform
 from datetime import datetime
 import re
 import mimetypes
 import subprocess
 import json
-
-rootDir = sys.argv[1]
-exclude = sys.argv[2]
-isEmbedded = sys.argv[3] in ['true', 'True', 'TRUE']
-maxImages= int(sys.argv[4])
-outputRoot = sys.argv[5]
-galleryItemsTemplatePath = sys.argv[6]
-albumsOutputRoot = sys.argv[7]
-albumManifestPath = sys.argv[8]
+import argparse
 
 
 def runCommand(cmd):
@@ -33,10 +26,6 @@ def removeSilent(path):
         os.remove(path)
     except:
         pass
-
-
-if len(sys.argv) > 3:
-    reversed = sys.argv[3] == 'True'
 
 
 def creation_date(path_to_file):
@@ -133,12 +122,7 @@ class GalleryGenerator:
             rootDir, excludePatterns.split(','), reverseListing)
 
         if maxImages > 0:
-            print("max images: {0}".format(maxImages))
-            newFiles = files[0:maxImages + 1]
-            print("Got: {0}".format(len(newFiles)))
-            for i in newFiles:
-                print("limited file list {0}".format(i.name))
-
+            newFiles = files[0:maxImages]
             self.makeGalleryListing(newFiles)
         else:
             self.makeGalleryListing(files)
@@ -305,6 +289,7 @@ class GalleryGenerator:
             with open(self.navBarTemplatePath, 'r') as f:
                 lines = f.readlines()
         except:
+            print("Nav bar manifest doesn't exist, will create one...")
             pass
 
         if entry in lines:
@@ -317,5 +302,26 @@ class GalleryGenerator:
 
 
 # Script start
-g = GalleryGenerator(rootDir, exclude, isEmbedded, outputRoot,
-                     galleryItemsTemplatePath, albumsOutputRoot, albumManifestPath, maxImages)
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    '--scanDir', help='directory to scan for images and videos')
+parser.add_argument(
+    '--excludes', help='comma separated list of regexps of file names to exclude in scan')
+parser.add_argument('--embedded', action='store_true',
+                    help='if true only the image gallery listing temlate is generated and no dedicate gallery page will be created.')
+parser.add_argument('--maxImages', default=0,
+                    help='Max number of images to generate in a gallery. Leave 0 for all images', type=int)
+parser.add_argument(
+    '--outputRoot', help='Root output folder containing all generated webpage data')
+parser.add_argument('--galleryTemplatePath',
+                    help='file path to write out the generated gallery items listing template')
+parser.add_argument('--albumOutputRoot',
+                    help='output directory to write generated album page')
+parser.add_argument(
+    '--manifestPath', help='path to write out the album listing template included in the nav bar')
+
+args = parser.parse_args()
+
+GalleryGenerator(rootDir=args.scanDir, excludePatterns=args.excludes, isEmbedded=args.embedded, projectRoot=args.outputRoot,
+                 templateOutputPath=args.galleryTemplatePath, albumsOutputDir=args.albumOutputRoot, navBarTemplatePath=args.manifestPath,
+                 maxImages=args.maxImages)
