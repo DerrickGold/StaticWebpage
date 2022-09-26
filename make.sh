@@ -19,6 +19,7 @@ CLEAN="false"
 KEEP_ASSETS="false"
 MAKE_GH_PROJECTS="false"
 MAKE_ALBUMS="false"
+SEND_MAIL="false"
 
 # Contains the following variables
 #
@@ -53,6 +54,10 @@ while [[ $# -gt 0 ]]; do
         ;;
     "deploy")
         DEPLOY="true"
+        shift
+        ;;
+    "notify")
+        SEND_MAIL="true"
         shift
         ;;
     esac
@@ -215,4 +220,10 @@ if [ $DEPLOY == "true" ]; then
     # invalidate the cache
     aws cloudfront create-invalidation --distribution-id "${DIST_ID}" \
         --paths /index.html /assets/css/main.css "/album/*" "/projects/*"
+fi
+
+if [ ${SEND_MAIL} == "true" ]; then
+    echo "Notifying mail list of new uploads..."
+    ./sendNotifications.py --mailSource "notifications@derrickgold.com" --name "Derrick" \
+        --webUrl "https://www.derrickgold.com" --emailList './mailList.txt' --dryRun "off"
 fi

@@ -4,3 +4,4 @@ out/
 src/templates/generated/*
 src/skeleton/assets/galleries/*
 .DS_Store
+mailList.txt

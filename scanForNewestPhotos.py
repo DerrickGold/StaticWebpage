@@ -175,7 +175,7 @@ class GalleryGenerator:
             print("heic image found, converting to jpg...")
 
             _, error = runCommand(
-                'convert ' + filePath + ' ' + newImage)
+                'convert ' + filePath + ' -quality 100 ' + newImage)
             runCommand('touch -r ' + filePath + ' ' + newImage)
 
         removeSilent(filePath)

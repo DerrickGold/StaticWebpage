@@ -1,0 +1,92 @@
+Description: Lambda SES Proxy for sending emails.
+Resources:
+  LambdaSesRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: SendEmail
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "ses:SendEmail"
+                  - "ses:SendRawEmail"
+                Resource: "*"
+
+  LambdaSesProxy:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      Architectures:
+        - "arm64"
+      Runtime: "nodejs16.x"
+      Role: { "Fn::GetAtt": ["LambdaSesRole", "Arn"] }
+      Handler: index.handler
+      FunctionName: "SesProxy"
+      Code:
+        ZipFile: |
+          const aws = require('aws-sdk')
+          const ses = new aws.SES();
+          exports.handler = async function(event, context) {
+              const { emails, subject, message, identity, dryRun } = event; 
+              if (!identity || identity.trim().length === 0) {
+                console.log("No SES identity provided: ", event);
+                return;
+              }
+              
+              if (!emails || emails.length === 0 || emails.filter(a => a.length > 0).length === 0) {
+                console.log("No emails provided, bailing: ", event);
+                return;
+              }
+
+              if (!subject || subject.length === 0 || subject === '') {
+                console.log("No email subject provided, bailing: ", event);
+                return;
+              }
+
+              if (!message || message.length === 0 || message === '') {
+                console.log("No email message provided, bailing: ", event);
+              }
+
+              const params = {
+                Destination: {
+                  BccAddresses: [
+                    ...emails,
+                  ]
+                },
+                Message: {
+                  Body: {
+                    Html: {
+                      Charset: "UTF-8",
+                      Data: message,
+                    }
+                  },
+                  Subject: {
+                    Charset: "UTF-8",
+                    Data: subject
+                  }
+                },
+                Source: identity
+              };
+
+              try {
+                if (!dryRun) {
+                  return await ses.sendEmail(params).promise();
+                } else {        
+                  return new Promise((resolve) => resolve({
+                    ...params,
+                    DRY_RUN: true,
+                  }));
+                }
+              } catch (error) {
+                throw `Failed to publish emails with parameters: ${JSON.stringify(params)}: ${error}`
+              }
+          }
