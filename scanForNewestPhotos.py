@@ -107,6 +107,8 @@ class GalleryGenerator:
         self.isEmbedded = isEmbedded
         self.templateOutputPath = templateOutputPath
         self.albumsRoot = albumsOutputDir
+        os.makedirs(self.albumsRoot, exist_ok=True)
+
         self.galleryName = os.path.basename(rootDir)
         albumOutputPath = self.getAlbumOutputPath(self.galleryName)
         self.navBarTemplatePath = navBarTemplatePath
@@ -201,16 +203,21 @@ class GalleryGenerator:
                     print("Skipping already added image {0}".format(fname))
                     continue
 
-                if "video" in mt:
-                    icon = "bi-play-btn-fill"
-                    print("Adding video {0}".format(filePath))
-                    if "mp4" not in mt:
-                        filePath = self.convertVideo(filePath, fname)
-                elif "image" in mt:
-                    print("Adding image {0}".format(filePath))
-                    if "heic" in fext:
-                        filePath = self.convertImage(filePath, fname)
-                else:
+                try:
+                    if "video" in mt:
+                        icon = "bi-play-btn-fill"
+                        print("Adding video {0}".format(filePath))
+                        if "mp4" not in mt:
+                            filePath = self.convertVideo(filePath, fname)
+                    elif "image" in mt:
+                        print("Adding image {0}".format(filePath))
+                        if "heic" in fext:
+                            filePath = self.convertImage(filePath, fname)
+                    else:
+                        continue
+                except Exception as e:
+                    print("Failed on: " + filePath)
+                    print(e)
                     continue
 
                 imageRelPath = filePath.replace(self.outputRoot, u'', 1)
@@ -292,8 +299,9 @@ class GalleryGenerator:
             print("Nav bar manifest doesn't exist, will create one...")
             pass
 
-        if entry in lines:
-            return
+        for l in lines:
+            if self.galleryName in l:
+                return;
 
         lines.append(entry)
         lines.sort()
