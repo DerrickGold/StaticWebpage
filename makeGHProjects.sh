@@ -3,7 +3,8 @@
 projectRoot="$1"
 projectsRootPath="$2"
 templatePath="$3"
-useCache="$4"
+projectStubsPath="$4"
+useCache="$5"
 
 MANIFEST_FILE="$templatePath/project-manifest.html"
 
@@ -132,10 +133,12 @@ function makeProjectPage() {
   local projectDir="$projectsRootPath"
   mkdir -p "$projectDir"
   local relPath="${projectDir#"$projectRoot/"}"
+  local rootTemplateName="root-project-$name"
   local templateName="project-$name-md"
   local slidesName="project-$name-slides"
   local templateOutput="$templatePath/$templateName"
   local slidesTemplateOutput="$templatePath/$slidesName"
+  local rootTemplateOutput="$templatePath/$rootTemplateName"
 
   generateReadMeSection "$fullName" "$name" "$defaultBranch" "$templateOutput.html" "$slidesTemplateOutput.html"
   hasImages=$?
@@ -193,7 +196,12 @@ function makeProjectPage() {
   {{footer}}
 </body>
 </html>
-' >"$projectDir/$name.html"
+' > "$rootTemplateOutput.html"
+
+  echo "{{$rootTemplateName}}" > "$projectDir/$name.html"
+  # create a project stub that can be committed such that rebuilding gh pages while using the cached
+  # templates will force transclusion of updated templates wihtout needing to regenerate all the data.
+  echo "{{$rootTemplateName}}" > "$projectStubsPath/$name.html"
 
   # Generate a "manifest" file that will be used in the header bar listing
   manifest_entry='<li><a href="'"/$relPath/$name.html"'">'"$name"'</a></li>'

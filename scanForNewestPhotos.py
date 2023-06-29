@@ -287,7 +287,7 @@ class GalleryGenerator:
             '''.format(self.galleryName, description))
 
     def addToNavBar(self):
-        entry = '<li><a href="{0}">{1}</a></li>'.format(
+        entry = '<li><a href="{0}">{1}</a></li>\n'.format(
             self.getAlbumRelUrl(self.galleryName), self.galleryName)
 
         # Sort the albums
@@ -299,11 +299,16 @@ class GalleryGenerator:
             print("Nav bar manifest doesn't exist, will create one...")
             pass
 
+        found = False
         for l in lines:
             if self.galleryName in l:
-                return;
+                found = True
+                break
 
-        lines.append(entry)
+        if not found:
+            lines.append(entry)
+        
+        # always re-sort entries just in case
         lines.sort()
         with open(self.navBarTemplatePath, 'w') as f:
             f.writelines(lines)

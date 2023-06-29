@@ -10,6 +10,7 @@ WEBSITE_PATH="$INPATH/skeleton/"
 GALLERIES_ROOT="$WEBSITE_PATH/assets/galleries"
 GALLERIES_OUTPUT="$OUTPATH/assets/galleries"
 PROJECTS_OUTPUT="$OUTPATH/projects"
+PROJECTS_INPUT_STUBS="$WEBSITE_PATH/projects"
 GENERATED_TEMPLATES_PATH="$TEMPLATES_PATH/generated"
 NEW_PHOTOS_COUNT="12"
 
@@ -182,7 +183,11 @@ if [ $BUILD == "true" ]; then
 
     #generateProjects
     if [ "$MAKE_GH_PROJECTS" == "true" ]; then
-        ./makeGHProjects.sh "$OUTPATH" "$PROJECTS_OUTPUT" "$GENERATED_TEMPLATES_PATH" "$REUSE_GH_PROJECTS"
+        ./makeGHProjects.sh "$OUTPATH" \
+            "$PROJECTS_OUTPUT" \
+            "$GENERATED_TEMPLATES_PATH" \
+            "$PROJECTS_INPUT_STUBS" \
+            "$REUSE_GH_PROJECTS"
     fi
 
     if [ "$MAKE_ALBUMS" == "true" ]; then
