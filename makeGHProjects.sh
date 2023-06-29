@@ -3,6 +3,7 @@
 projectRoot="$1"
 projectsRootPath="$2"
 templatePath="$3"
+useCache="$4"
 
 MANIFEST_FILE="$templatePath/project-manifest.html"
 
@@ -200,8 +201,10 @@ function makeProjectPage() {
 }
 
 function fetchGHProjects() {
-  rm "$MANIFEST_FILE"
-  touch "$MANIFEST_FILE"
+  if [ "$useCache" != "true" ]; then
+    rm "$MANIFEST_FILE"
+    touch "$MANIFEST_FILE"
+  fi
 
   local ghPage=1
   local repos=$(getPersonalRepos "$ghPage")

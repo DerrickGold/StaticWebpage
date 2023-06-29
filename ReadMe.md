@@ -18,8 +18,8 @@ Requires the following programs:
 * `jq`: for parsing GH api responses: https://stedolan.github.io/jq/
 * `ffmpeg`: for image and video conversion
 * `bash > 5.X`: for scripts
-* `coreutils`: for proper version of sed (if on macOS)
-* `grep`: for mac, use the latest version on brew
+* `coreutils` (mac): for proper version of sed
+* `grep` (mac): use the latest version on brew
 * `python3`: for scripts, make sure to have the latest version with updated mimetypes
 
 

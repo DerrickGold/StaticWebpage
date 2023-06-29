@@ -18,6 +18,7 @@ DEPLOY="false"
 CLEAN="false"
 KEEP_ASSETS="false"
 MAKE_GH_PROJECTS="false"
+REUSE_GH_PROJECTS="true"
 MAKE_ALBUMS="false"
 SEND_MAIL="false"
 
@@ -181,7 +182,7 @@ if [ $BUILD == "true" ]; then
 
     #generateProjects
     if [ "$MAKE_GH_PROJECTS" == "true" ]; then
-        ./makeGHProjects.sh "$OUTPATH" "$PROJECTS_OUTPUT" "$GENERATED_TEMPLATES_PATH"
+        ./makeGHProjects.sh "$OUTPATH" "$PROJECTS_OUTPUT" "$GENERATED_TEMPLATES_PATH" "$REUSE_GH_PROJECTS"
     fi
 
     if [ "$MAKE_ALBUMS" == "true" ]; then
