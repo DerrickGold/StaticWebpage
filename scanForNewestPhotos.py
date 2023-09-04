@@ -57,9 +57,11 @@ def get_file_date(filename, path):
 class AlbumDetailsCache:
     def __init__(self):
         self.cache = {}
+        self.pathCache = {}
 
     def loadAlbumDetails(self, albumName, rootPath):
         detailsPath = rootPath + os.sep + "details.json"
+        self.pathCache[albumName] = detailsPath
         try:
             with open(detailsPath) as j:
                 self.cache[albumName] = json.load(j)
@@ -79,7 +81,13 @@ class AlbumDetailsCache:
         self.loadDetails(fileEntry)
         if fileEntry.detailKey in self.cache[fileEntry.albumName]:
             return self.cache[fileEntry.albumName][fileEntry.detailKey]
-        return ""
+        else:
+            self.cache[fileEntry.albumName][fileEntry.detailKey] = ""
+            return ""
+        
+    def dumpDetails(self, albumName):
+        with open(self.pathCache[albumName], "w") as j:
+            j.write(json.dumps(self.cache[albumName], indent=2, sort_keys=True))
 
 
 class FileEntry:
@@ -116,6 +124,11 @@ class GalleryGenerator:
         self.detailsCache.loadAlbumDetails(self.galleryName, rootDir)
         albumDetails = self.detailsCache.getAlbumData(self.galleryName)
 
+        self.galleryNiceName = re.sub('_', ' ', self.galleryName)
+        # allow overriding of album name
+        if 'albumName' in albumDetails:
+            self.galleryNiceName = albumDetails['albumName']
+
         reverseListing = False
         if albumDetails is not None and 'reverseList' in albumDetails:
             reverseListing = albumDetails['reverseList']
@@ -132,6 +145,8 @@ class GalleryGenerator:
         if not self.isEmbedded and albumDetails is not None:
             self.makeGalleryPage(albumOutputPath, albumDetails['description'])
             self.addToNavBar()
+
+        self.detailsCache.dumpDetails(self.galleryName)
 
     def getAlbumOutputPath(self, albumName):
         return self.albumsRoot + os.sep + albumName + '.html'
@@ -160,25 +175,46 @@ class GalleryGenerator:
         mp4Out = fname+"-web.mp4"
         if not os.path.exists(mp4Out):
             print("Non-mp4 video found, converting...")
+            quotedPath = '"{0}"'.format(filePath)
+            print("Conversion input: " + 'ffmpeg -i ' + quotedPath + ' -vcodec libx264 -pix_fmt yuv420p ' + mp4Out)
+            #_, error = runCommand(
+            #    'ffmpeg -i ' + filePath + ' -c:v copy -c:a copy ' + mp4Out)
             _, error = runCommand(
-                'ffmpeg -i ' + filePath + ' -c:v copy -c:a copy ' + mp4Out)
+                'ffmpeg -i ' + quotedPath + ' -vcodec libx264 -pix_fmt yuv420p ' + mp4Out)
             if error:
                 print(error)
 
-            runCommand('touch -r ' + filePath + ' ' + mp4Out)
-
+            runCommand('touch -r ' + quotedPath + ' ' + mp4Out)
+        else:
+            print("Path already exists: " + mp4Out)
         # cleanup original file
         removeSilent(filePath)
         return mp4Out
+    
+    def shouldConvertVideo(self, mimetype, filePath):
+        result, error = runCommand('file ' + filePath)
+        if error:
+            print(error)
+            return False
+        
+        sanitizedResult = result.replace(filePath, '')        
+        # 3gp+ can apepar as a regular mp4 file in the mime type, but
+        # isn't compatable in all browsers
+        if '3gp' in sanitizedResult.lower() or "mp4" not in mimetype:
+            return True
+        
+        print("Skipping conversion of video. Found supported mimetype: {0}, OS reported type: {1}".format(mimetype, sanitizedResult))
+        return False
+
 
     def convertImage(self, filePath, fname):
         newImage = fname + ".jpg"
         if not os.path.exists(newImage):
             print("heic image found, converting to jpg...")
-
+            quotedPath = '"{0}"'.format(filePath)
             _, error = runCommand(
-                'convert ' + filePath + ' -quality 100 ' + newImage)
-            runCommand('touch -r ' + filePath + ' ' + newImage)
+                'convert ' + quotedPath + ' -quality 100 ' + newImage)
+            runCommand('touch -r ' + quotedPath + ' ' + newImage)
 
         removeSilent(filePath)
         return newImage
@@ -207,7 +243,7 @@ class GalleryGenerator:
                     if "video" in mt:
                         icon = "bi-play-btn-fill"
                         print("Adding video {0}".format(filePath))
-                        if "mp4" not in mt:
+                        if self.shouldConvertVideo(mt, filePath):
                             filePath = self.convertVideo(filePath, fname)
                     elif "image" in mt:
                         print("Adding image {0}".format(filePath))
@@ -270,8 +306,8 @@ class GalleryGenerator:
       <div class="container position-relative">
         <div class="row d-flex justify-content-center">
           <div class="col-lg-6 text-center">
-            <h2>{0}</h2>
-            <p>{1}</p>
+            <h2>{1}</h2>
+            <p>{2}</p>
           </div>
         </div>
       </div>
@@ -284,11 +320,11 @@ class GalleryGenerator:
   {{{{footer}}}}
 </body>
 </html>          
-            '''.format(self.galleryName, description))
+            '''.format(self.galleryName, self.galleryNiceName, description))
 
     def addToNavBar(self):
         entry = '<li><a href="{0}">{1}</a></li>\n'.format(
-            self.getAlbumRelUrl(self.galleryName), self.galleryName)
+            self.getAlbumRelUrl(self.galleryName), self.galleryNiceName)
 
         # Sort the albums
         lines = []
