@@ -77,29 +77,62 @@ function resolveTemplates() {
     declare -a inputs
     while read -r line; do
         inputs+=("$line")
-    done <<<${template_usages}
+    done <<<"${template_usages}"
 
     for i in "${inputs[@]}"; do
         local file="$(echo $i | cut -d':' -f1)"
-        local template="$(echo $i | cut -d':' -f2 | tr -d ' ' | tr -d '\n\r')"
-        local template_file_name="$(echo -n $template | tr -d '{}' | tr -d '\n\r').html"
+        #local template="$(echo $i | cut -d':' -f2 | tr -d ' ' | tr -d '\n\r')"
+        local template="$(echo $i | sed 's/^[^:]*://' | tr -d ' ' | tr -d '\n\r')"
+        local template_str="$(echo -n $template | tr -d '{}' | tr -d '\n\r')"
 
+        local template_name="$(echo $template_str | cut -f1 -d'|')"
+        local properties_str=$(echo $template_str|cut -f2 -d'|')
+        OLDIFS=$IFS
+        IFS=','
+        read -ra properties_array <<< "$properties_str"
+
+
+        srcFile=""
+        for i in "${properties_array[@]}"; do
+            key="$(echo $i | cut -f1 -d':' | tr -d ',')"
+            value="$(echo $i | cut -f2 -d ':')"
+
+            #echo "Found key: $key, value: $value"
+            if [ $key == 'pPage' ]; then
+                srcFile=$value
+            fi  
+        done
+        IFS=$OLDIFS
+
+
+        local template_file_name="$template_name.html"
         if [ -z "$file" ] || [ -z "$template" ]; then
             continue
         fi
 
-        local template_file="$TEMPLATES_PATH/$template_file_name"
+        echo "looking for $template_file_name"
 
-        if [ ! -f "$template_file" ]; then
-            template_file="$TEMPLATES_PATH/generated/$template_file_name"
-        fi
+        directories=$(find $TEMPLATES_PATH -type d)
+        local template_file=""
+        while read -r line; do
+            local tmpFile="$line/$template_file_name"
+            if [ -f "$tmpFile" ]; then
+                template_file="$tmpFile"
+                break
+            fi
+        done <<<"${directories}"
 
         echo "Replacing $template in $file with $template_file..."
         #contents=$(sed -e "/$template/ {" -e "r $template_file" -e "d" -e "}" "$file")
-        local templateContents=$(<$template_file)
-        local newFileContents=$(<$file)
+        local templateContents=$(<"$template_file")
+        local newFileContents=$(<"$file")
         #echo "${newFileContents//$template/$templateContents}" > $file
-        contents=$(cat $file | sed -e "/^[[:space:]]*$template[[:space:]]*\$/ {" -e "r $template_file" -e 'd' -e '}')
+        if [ -z "$srcFile" ] || [ $srcFile == $(basename $file) ]; then
+            contents=$(cat $file | sed -e "/^[[:space:]]*$template[[:space:]]*\$/ {" -e "r $template_file" -e 'd' -e '}')
+        else
+            contents=$(cat $file | sed -e "/^[[:space:]]*$template[[:space:]]*\$/d")
+        fi
+
         echo "$contents" >$file
     done
 }
@@ -109,7 +142,7 @@ function generateGalleries() {
     declare -a gallery_paths
     while read -r line; do
         gallery_paths+=("$line")
-    done <<<${galleries}
+    done <<<"${galleries}"
 
     for p in "${gallery_paths[@]}"; do
         echo "Generating gallery for $p..."

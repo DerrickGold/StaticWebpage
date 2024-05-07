@@ -110,7 +110,10 @@ def compareFileEntry(a):
 class GalleryGenerator:
     def __init__(self, rootDir, excludePatterns, isEmbedded, projectRoot, templateOutputPath, albumsOutputDir, navBarTemplatePath, maxImages):
         self.detailsCache = AlbumDetailsCache()
+        
         self.mimetypes = mimetypes.MimeTypes()
+        self.mimetypes.add_type("image/heic", ".heic")
+
         self.outputRoot = projectRoot
         self.isEmbedded = isEmbedded
         self.templateOutputPath = templateOutputPath
@@ -175,16 +178,15 @@ class GalleryGenerator:
         mp4Out = fname+"-web.mp4"
         if not os.path.exists(mp4Out):
             print("Non-mp4 video found, converting...")
-            quotedPath = '"{0}"'.format(filePath)
-            print("Conversion input: " + 'ffmpeg -i ' + quotedPath + ' -vcodec libx264 -pix_fmt yuv420p ' + mp4Out)
+            print("Conversion input: " + 'ffmpeg -i ' + filePath + ' -vcodec libx264 -pix_fmt yuv420p ' + mp4Out)
             #_, error = runCommand(
             #    'ffmpeg -i ' + filePath + ' -c:v copy -c:a copy ' + mp4Out)
             _, error = runCommand(
-                'ffmpeg -i ' + quotedPath + ' -vcodec libx264 -pix_fmt yuv420p ' + mp4Out)
+                'ffmpeg -i ' + filePath + ' -vcodec libx264 -pix_fmt yuv420p ' + mp4Out)
             if error:
                 print(error)
 
-            runCommand('touch -r ' + quotedPath + ' ' + mp4Out)
+            runCommand('touch -r ' + filePath + ' ' + mp4Out)
         else:
             print("Path already exists: " + mp4Out)
         # cleanup original file
@@ -200,7 +202,7 @@ class GalleryGenerator:
         sanitizedResult = result.replace(filePath, '')        
         # 3gp+ can apepar as a regular mp4 file in the mime type, but
         # isn't compatable in all browsers
-        if '3gp' in sanitizedResult.lower() or "mp4" not in mimetype:
+        if '3gp' in sanitizedResult.lower() or "mp4" not in mimetype or "ISO 14496-14" in sanitizedResult:
             return True
         
         print("Skipping conversion of video. Found supported mimetype: {0}, OS reported type: {1}".format(mimetype, sanitizedResult))

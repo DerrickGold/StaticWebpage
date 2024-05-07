@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+TRUE=0
+FALSE=1
+
 projectRoot="$1"
 projectsRootPath="$2"
 templatePath="$3"
@@ -14,10 +17,10 @@ if [ -f "./env.sh" ]; then
 fi
 
 function isProcessed() {
-  if [ -z "$(grep $1 $MANIFEST_FILE)" ]; then
-    return 1
+  if [ -z "$(grep $1 ${MANIFEST_FILE})" ]; then
+    return $FALSE
   else
-    return 0
+    return $TRUE
   fi
 }
 
@@ -36,10 +39,12 @@ function getReadMe() {
 function getPersonalRepos() {
   local page="$1"
 
-  curl -s --request GET --header "Authorization: Bearer $GH_TOKEN" \
+  local result=$(curl -s --request GET --header "Authorization: Bearer $GH_TOKEN" \
     --header "Accept: application/vnd.github.v3+json" \
     --url "https://api.github.com/users/$GH_USERNAME/repos?page=$page" |
-    jq -c ".[]|select(.private == false and .fork == false)|{html_url,description,full_name,name,default_branch}"
+    jq -c ".[]|select(.private == false and .fork == false)|{html_url,description,full_name,name,default_branch}")
+
+  printf "%s\n" "$result"
 }
 
 function generateReadMeSection() {
@@ -66,14 +71,14 @@ function generateReadMeSection() {
   if [ -z "$imagePaths" ]; then
     echo "No images found."
     echo "$newTitledReadMe" >$templateOutput
-    return 1
+    return $FALSE
   fi
 
   echo "Found images: $imagePaths"
   declare -a pathsArray
   while read -r line; do
     pathsArray+=("$line")
-  done <<<${imagePaths}
+  done <<<"${imagePaths}"
 
   # Extract images and create a slide show at the top
   echo '
@@ -114,20 +119,20 @@ function generateReadMeSection() {
         </div>' >>$slidesTemplateOutput
 
   echo "$newTitledReadMe" >$templateOutput
-  return 0
+  return $TRUE
 }
 
 function makeProjectPage() {
+  echo "Making project page..."
   local name="$1"
   local description="$2"
   local fullName="$3"
   local ghUrl="$4"
   local defaultBranch="$5"
-
   isProcessed "$name"
   status=$?
-  if [ $status == 0 ]; then
-    return 0
+  if [ $status == $TRUE ]; then
+    return $TRUE
   fi
 
   local projectDir="$projectsRootPath"
@@ -140,6 +145,7 @@ function makeProjectPage() {
   local slidesTemplateOutput="$templatePath/$slidesName"
   local rootTemplateOutput="$templatePath/$rootTemplateName"
 
+  echo "Making readme..."
   generateReadMeSection "$fullName" "$name" "$defaultBranch" "$templateOutput.html" "$slidesTemplateOutput.html"
   hasImages=$?
   if [ "$description" == "null" ]; then
@@ -147,7 +153,7 @@ function makeProjectPage() {
   fi
 
   slidesTemplate=""
-  if [ $hasImages ]; then
+  if [ $hasImages == $TRUE ]; then
     slidesTemplate='{{'"$slidesName"'}}'
   fi
 
@@ -217,20 +223,16 @@ function fetchGHProjects() {
   local ghPage=1
   local repos=$(getPersonalRepos "$ghPage")
   while [ ! -z "$repos" ]; do
-    declare -a repoArray
     while read -r line; do
-      repoArray+=("$line")
-    done <<<${repos}
-
-    for r in "${repoArray[@]}"; do
-      local url=$(echo "$r" | jq .html_url | tr -d '"')
-      local desc=$(echo "$r" | jq .description | tr -d '"')
-      local name=$(echo "$r" | jq .name | tr -d '"')
-      local fullName=$(echo "$r" | jq .full_name | tr -d '"')
-      local defaultBranch=$(echo "$r" | jq .default_branch | tr -d '"')
+      local url=$(echo "$line" | jq .html_url | tr -d '"')
+      local desc=$(echo "$line" | jq .description | tr -d '"')
+      local name=$(echo "$line" | jq .name | tr -d '"')
+      local fullName=$(echo "$line" | jq .full_name | tr -d '"')
+      local defaultBranch=$(echo "$line" | jq .default_branch | tr -d '"')
       echo "Generating $fullName..."
       makeProjectPage "$name" "$desc" "$fullName" "$url" "$defaultBranch"
-    done
+    done <<<"${repos}"
+
 
     ((ghPage++))
     echo "Fetching next page of projects: $ghPage"
