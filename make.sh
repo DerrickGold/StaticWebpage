@@ -258,7 +258,7 @@ if [ $DEPLOY == "true" ]; then
     echo "Invalidating caches..."
     # invalidate the cache
     aws cloudfront create-invalidation --distribution-id "${DIST_ID}" \
-        --paths /index.html /assets/css/main.css "/album/*" "/projects/*"
+        --paths /index.html /assets/css/main.css /music.html /assets/css/music.css "/album/*" "/projects/*" "/assets/music/*"
 fi
 
 if [ ${SEND_MAIL} == "true" ]; then

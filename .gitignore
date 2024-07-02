@@ -5,3 +5,6 @@ src/templates/generated/*
 src/skeleton/assets/galleries/*
 .DS_Store
 mailList.txt
+**.mp3
+src/skeleton/assets/music/
+src/skeleton/projects/

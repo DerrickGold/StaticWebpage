@@ -112,6 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
       disableOnInteraction: true
     },
     slidesPerView: 'auto',
+    zoomable: true,
     pagination: {
       el: '.swiper-pagination',
       type: 'bullets',

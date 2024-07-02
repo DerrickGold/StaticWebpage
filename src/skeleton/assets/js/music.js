@@ -14,6 +14,7 @@ let seek_slider = document.querySelector(".seek_slider");
 let volume_slider = document.querySelector(".volume_slider");
 let curr_time = document.querySelector(".current-time");
 let total_duration = document.querySelector(".total-duration");
+let download_container = document.querySelector(".download-link");
 
 // Specify globally used values
 let track_index = 0;
@@ -73,12 +74,17 @@ function loadTrackListing() {
 
     track.addEventListener('click', () => {
       loadTrack(i);
+      track_index = i;
       playTrack();
     });
     track_list_container.appendChild(track);
   });
 }
 
+function downloadTrack() {
+  download_container.setAttribute("href", curr_track.src);
+  download_container.click();
+}
 
 function loadTrack(track_index) {
   // Clear the previous seek timer

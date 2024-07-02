@@ -13,12 +13,13 @@ import subprocess
 import json
 import argparse
 
+CONVERT = "/opt/homebrew/bin/convert"
 
-def runCommand(cmd):
-    process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
+
+def runCommandArray(cmds):
+    process = subprocess.Popen(cmds, stdout=subprocess.PIPE)
     output, error = process.communicate()
     return output.decode('utf8').strip(), error
-
 
 def removeSilent(path):
     try:
@@ -44,12 +45,17 @@ def creation_date(path_to_file):
             return stat.st_mtime
 
 # get the file date based on either the name (if name contains a valid date) or file creation time
-
-
 def get_file_date(filename, path):
     datepart = re.split(r'[-_]', filename)
+
     try:
-        return str(datetime.strptime(datepart[0], "%Y%m%d")) + datepart[1]
+        while len(datepart) > 0:
+            curDate = datepart.pop(0)
+            if not curDate.isnumeric():
+                continue
+            
+            return str(datetime.strptime(curDate, "%Y%m%d")) + ''.join(datepart)
+        raise "No dates found in name"
     except:
         return str(datetime.utcfromtimestamp(creation_date(path + os.sep + filename)))
 
@@ -179,14 +185,11 @@ class GalleryGenerator:
         if not os.path.exists(mp4Out):
             print("Non-mp4 video found, converting...")
             print("Conversion input: " + 'ffmpeg -i ' + filePath + ' -vcodec libx264 -pix_fmt yuv420p ' + mp4Out)
-            #_, error = runCommand(
-            #    'ffmpeg -i ' + filePath + ' -c:v copy -c:a copy ' + mp4Out)
-            _, error = runCommand(
-                'ffmpeg -i ' + filePath + ' -vcodec libx264 -pix_fmt yuv420p ' + mp4Out)
+            _, error = runCommandArray(['ffmpeg', '-i', filePath, '-vcodec', 'libx264', '-pix_fmt', 'yuv420p', mp4Out])
             if error:
                 print(error)
 
-            runCommand('touch -r ' + filePath + ' ' + mp4Out)
+            runCommandArray(['touch','-r', filePath, mp4Out])
         else:
             print("Path already exists: " + mp4Out)
         # cleanup original file
@@ -194,7 +197,7 @@ class GalleryGenerator:
         return mp4Out
     
     def shouldConvertVideo(self, mimetype, filePath):
-        result, error = runCommand('file ' + filePath)
+        result, error = runCommandArray(['file', filePath])
         if error:
             print(error)
             return False
@@ -212,11 +215,15 @@ class GalleryGenerator:
     def convertImage(self, filePath, fname):
         newImage = fname + ".jpg"
         if not os.path.exists(newImage):
-            print("heic image found, converting to jpg...")
-            quotedPath = '"{0}"'.format(filePath)
-            _, error = runCommand(
-                'convert ' + quotedPath + ' -quality 100 ' + newImage)
-            runCommand('touch -r ' + quotedPath + ' ' + newImage)
+            print("heic image found, converting {0} to {1}".format(filePath, newImage))
+            _, error = runCommandArray([
+                CONVERT,
+                filePath,
+                '-quality', 
+                '100',
+                newImage
+            ])
+            runCommandArray(['touch', '-r', filePath, newImage])
 
         removeSilent(filePath)
         return newImage
@@ -265,7 +272,7 @@ class GalleryGenerator:
                     galleryLink = '<a href="{0}" class="details-link"><i class="bi bi-link-45deg"></i></a>' \
                         .format(self.getAlbumRelUrl(i.albumName))
 
-                thumbnail, _ = runCommand('./makeThumbnail.sh ' + filePath)
+                thumbnail, _ = runCommandArray(['./makeThumbnail.sh', filePath])
                 thumbnailRelPath = str(thumbnail).replace(
                     self.outputRoot, u'', 1)
 

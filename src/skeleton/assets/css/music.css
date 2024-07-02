@@ -12,12 +12,12 @@
  /* Using flex with the column direction to
    align items in a vertical direction */
  .player {
-   height: 95vh;
+   /*height: 95vh;*/
    display: flex;
    align-items: center;
    flex-direction: column;
    justify-content: center;
-   width: 25%;
+   max-width: 512px;
    margin-left: auto;
    margin-right: auto;
  }
@@ -33,7 +33,7 @@
    margin-top: 25px;
    height: 250px;
    width: 250px;
-   background-image: URL("https://source.unsplash.com/Qrspubmx6kE/640x360");
+   background-image: URL("/assets/music/nr-logo.png");
    background-size: cover;
    background-position: center;
    /*border-radius: 15%;*/
@@ -88,6 +88,7 @@
  .slider_container {
    width: 75%;
    max-width: 400px;
+   min-width: 300px;
    display: flex;
    justify-content: center;
    align-items: center;
@@ -153,7 +154,8 @@
  i.fa-play-circle,
  i.fa-pause-circle,
  i.fa-step-forward,
- i.fa-step-backward {
+ i.fa-step-backward,
+ i.fa-download {
    cursor: pointer;
  }
 
